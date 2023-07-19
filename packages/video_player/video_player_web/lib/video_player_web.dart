@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:html';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -20,6 +21,9 @@ class VideoPlayerPlugin extends VideoPlayerPlatform {
   static void registerWith(Registrar registrar) {
     VideoPlayerPlatform.instance = VideoPlayerPlugin();
   }
+
+  bool get isIOSBrowser =>
+      kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   // Map of textureId -> VideoPlayer instances
   final Map<int, VideoPlayer> _videoPlayers = <int, VideoPlayer>{};
@@ -99,7 +103,15 @@ class VideoPlayerPlugin extends VideoPlayerPlatform {
 
   @override
   Future<void> play(int textureId) async {
-    return _player(textureId).play();
+    if (isIOSBrowser) {
+      await setVolume(textureId, 0);
+      // ignore: always_specify_types
+      await Future.delayed(const Duration(milliseconds: 100));
+      await _player(textureId).play();
+      await setVolume(textureId, 1);
+    } else {
+      return _player(textureId).play();
+    }
   }
 
   @override
